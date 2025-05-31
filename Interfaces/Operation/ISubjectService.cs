@@ -4,7 +4,7 @@ namespace ReStudyAPI.Interfaces.Operation
 {
     public interface ISubjectService
     {
-        public Task<IEnumerable<SubjectDto>> GetAllAsync();
+        public Task<List<SubjectDto>> GetAllAsync();
         public Task<SubjectDto?> GetByIdAsync(int id);
         public Task<int> CreateAsync(AddSubjectDto subjectDto);
         public Task<bool> UpdateAsync(EditSubjectDto subjectDto);

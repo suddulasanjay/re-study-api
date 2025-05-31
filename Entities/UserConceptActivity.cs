@@ -16,6 +16,9 @@ namespace ReStudyAPI.Entities
         [Column(Name = "activitydate"), NotNull]
         public DateTime ActivityDate { get; set; }
 
+        [Column(Name = "duration"), NotNull]
+        public int Duration { get; set; }
+
         [Column(Name = "conceptstateid"), NotNull]
         public int ConceptStateId { get; set; }
 
