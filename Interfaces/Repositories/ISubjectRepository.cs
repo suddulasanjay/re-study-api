@@ -6,5 +6,6 @@ namespace ReStudyAPI.Interfaces.Repositories
     {
         public Task<List<Subject>> GetSubjectsByUserIdAsync(int userId);
         public Task<List<Subject>> GetPresetSubjectsAsync();
+        public Task AssignSubjectToUserAsync(int userId, int subjectId);
     }
 }

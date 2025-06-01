@@ -61,5 +61,24 @@ namespace ReStudyAPI.Repositories
         {
             return await _db.Subjects.Where(s => s.IsPreset == true && s.Status == CommonStatus.Enabled).ToListAsync();
         }
+
+        public async Task AssignSubjectToUserAsync(int userId, int subjectId)
+        {
+            var existingMapping = await _db.UserSubjects.AnyAsync(x => x.UserId == userId && x.SubjectId == subjectId && x.Status == CommonStatus.Enabled);
+            if (existingMapping)
+            {
+                return;
+            }
+            var userSubject = new UserSubject()
+            {
+                UserId = userId,
+                SubjectId = subjectId,
+                CreatedTime = DateTime.UtcNow,
+                ModifiedByUserId = userId,
+                ModifiedTime = DateTime.UtcNow,
+                Status = CommonStatus.Enabled
+            };
+            await _db.InsertAsync(userSubject);
+        }
     }
 }

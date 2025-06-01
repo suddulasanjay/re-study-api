@@ -26,12 +26,18 @@ namespace ReStudyAPI.Services.Operation
         public async Task<int> CreateAsync(AddSubjectDto subjectDto)
         {
             var session = _currentSessionHelper.GetCurrentSession();
+            if (session == null)
+            {
+                throw new Exception("Operation Not Allowed");
+            }
+            int userId = session?.UserId ?? default;
             var subject = _mapper.Map<Subject>(subjectDto);
             subject.CreatedTime = DateTime.UtcNow;
             subject.ModifiedTime = DateTime.UtcNow;
-            subject.ModifiedByUserId = session?.UserId;
-
-            return await _subjectRepository.CreateAsync(subject);
+            subject.ModifiedByUserId = userId;
+            var subjectId = await _subjectRepository.CreateAsync(subject);
+            await _subjectRepository.AssignSubjectToUserAsync(userId, subjectId);
+            return subjectId;
         }
 
         public async Task<bool> DeleteAsync(int id)

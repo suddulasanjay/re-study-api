@@ -57,5 +57,31 @@ namespace ReStudyAPI.Controllers.Operation
             var success = await _conceptService.DeleteAsync(id);
             return success ? NoContent() : NotFound();
         }
+
+        [HttpPost("record-study-session")]
+        [ProducesResponseType(typeof(bool), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<bool>> RecordStudySession([FromBody] AddStudySessionDto dto)
+        {
+            if (dto == null || dto.ConceptId <= 0 || dto.Duration <= 0)
+            {
+                return BadRequest("Invalid study session data");
+            }
+            var result = await _conceptService.RecordStudySessionAsync(dto);
+            return Ok(result);
+
+        }
+
+        [HttpGet("study-session/{conceptId:int}")]
+        [ProducesResponseType(typeof(StudySessionDto), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<StudySessionDto>> GetStudySession(int conceptId)
+        {
+            var result = await _conceptService.GetStudySessionDetailsAsync(conceptId);
+            return Ok(result);
+
+        }
+
+
     }
 }

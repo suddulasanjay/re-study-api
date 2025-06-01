@@ -50,5 +50,25 @@ namespace ReStudyAPI.Repositories
                 .Set(x => x.ModifiedByUserId, modifiedByUserId)
                 .UpdateAsync() > 0;
         }
+
+        public async Task AssignCategoryToUserAsync(int userId, int categoryId)
+        {
+            var existingMapping = await _db.UserCategories.AnyAsync(x => x.UserId == userId && x.CategoryId == categoryId && x.Status == CommonStatus.Enabled);
+            if (existingMapping)
+            {
+                return;
+            }
+            var userCategory = new UserCategory
+            {
+                UserId = userId,
+                CategoryId = categoryId,
+                CreatedTime = DateTime.UtcNow,
+                ModifiedByUserId = userId,
+                ModifiedTime = DateTime.UtcNow,
+                Status = CommonStatus.Enabled
+            };
+            await _db.InsertAsync(userCategory);
+        }
+
     }
 }

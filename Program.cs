@@ -50,6 +50,7 @@ namespace ReStudyAPI
             builder.Services.AddScoped<ICategoryService, CategoryService>();
             builder.Services.AddScoped<IConceptService, ConceptService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IHomeService, HomeService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, UserService>();
 

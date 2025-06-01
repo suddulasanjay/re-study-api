@@ -9,5 +9,7 @@ namespace ReStudyAPI.Interfaces.Operation
         public Task<int> CreateAsync(AddConceptDto dto);
         public Task<bool> UpdateAsync(EditConceptDto dto);
         public Task<bool> DeleteAsync(int id);
+        public Task<bool> RecordStudySessionAsync(AddStudySessionDto dto);
+        public Task<StudySessionDto> GetStudySessionDetailsAsync(int conceptId);
     }
 }

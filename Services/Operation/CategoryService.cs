@@ -48,9 +48,18 @@ namespace ReStudyAPI.Services.Operation
 
         public async Task<int> CreateAsync(AddCategoryDto dto)
         {
+            var session = _sessionHelper.GetCurrentSession();
+            if (session == null)
+            {
+                throw new Exception("Operation Not Allowed");
+            };
+            int userId = session?.UserId ?? 0;
             var category = _mapper.Map<Category>(dto);
             category.CreatedTime = category.ModifiedTime = DateTime.UtcNow;
-            return await _categoryRepository.CreateAsync(category);
+            category.ModifiedByUserId = userId;
+            var categoryId = await _categoryRepository.CreateAsync(category);
+            await _categoryRepository.AssignCategoryToUserAsync(userId, categoryId);
+            return categoryId;
         }
 
         public async Task<bool> UpdateAsync(EditCategoryDto dto)

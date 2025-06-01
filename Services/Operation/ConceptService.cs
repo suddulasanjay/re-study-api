@@ -3,6 +3,7 @@ using ReStudyAPI.Entities;
 using ReStudyAPI.Interfaces.Operation;
 using ReStudyAPI.Interfaces.Repositories;
 using ReStudyAPI.Models.Operation;
+using ReStudyAPI.Utility.Constants;
 using ReStudyAPI.Utility.Helpers;
 
 namespace ReStudyAPI.Services.Operation
@@ -64,6 +65,34 @@ namespace ReStudyAPI.Services.Operation
         public async Task<bool> DeleteAsync(int id)
         {
             return await _conceptRepository.SoftDeleteAsync(id);
+        }
+
+        public async Task<bool> RecordStudySessionAsync(AddStudySessionDto dto)
+        {
+            var session = _sessionHelper.GetCurrentSession();
+            if (session == null) return false;
+
+            var activity = new UserConceptActivity
+            {
+                ConceptId = dto.ConceptId,
+                UserId = session.UserId,
+                ActivityDate = DateTime.UtcNow,
+                Duration = dto.Duration,
+                ConceptStateId = dto.ConceptStateId,
+                Comment = dto.Comment,
+                Status = CommonStatus.Enabled,
+            };
+            activity.CreatedTime = activity.ModifiedTime = DateTime.UtcNow;
+            activity.ModifiedByUserId = session?.UserId;
+
+            return await _conceptRepository.TrackUserConceptActivityAsync(activity);
+        }
+
+        public async Task<StudySessionDto> GetStudySessionDetailsAsync(int conceptId)
+        {
+            var session = _sessionHelper.GetCurrentSession();
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            return await _conceptRepository.GetStudySessionDetailsAsync(conceptId, session.UserId, DateTime.UtcNow);
         }
     }
 }

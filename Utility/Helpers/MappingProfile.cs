@@ -18,6 +18,14 @@ namespace ReStudyAPI.Utility.Helpers
             CreateMap<Subject, AddSubjectDto>().ReverseMap();
             CreateMap<Subject, EditSubjectDto>().ReverseMap();
             CreateMap<Subject, SubjectDto>().ReverseMap();
+
+            CreateMap<Category, AddCategoryDto>().ReverseMap();
+            CreateMap<Category, EditCategoryDto>().ReverseMap();
+            CreateMap<Category, CategoryDto>().ReverseMap();
+
+            CreateMap<Concept, AddConceptDto>().ReverseMap();
+            CreateMap<Concept, EditConceptDto>().ReverseMap();
+            CreateMap<Concept, ConceptDto>().ReverseMap();
         }
     }
 }

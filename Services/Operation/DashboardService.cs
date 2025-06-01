@@ -47,5 +47,107 @@ namespace ReStudyAPI.Services.Operation
             }
         }
 
+        public async Task<List<RecentActivityDto>> GetRecentActivitiesAsync()
+        {
+            var session = _currentSessionHelper.GetCurrentSession();
+            if (session == null)
+                return new List<RecentActivityDto>();
+
+            return await (from uca in _db.UserConceptActivities.Where(x => x.UserId == session.UserId && x.Status == CommonStatus.Enabled)
+                          from concept in _db.Concepts.InnerJoin(c => c.Id == uca.ConceptId && c.Status == CommonStatus.Enabled)
+                          from category in _db.Categories.InnerJoin(cat => cat.Id == concept.CategoryId && cat.Status == CommonStatus.Enabled)
+                          from subject in _db.Subjects.LeftJoin(sub => sub.Id == category.SubjectId && sub.Status == CommonStatus.Enabled)
+                          from state in _db.ConceptStates.InnerJoin(st => st.Id == uca.ConceptStateId && st.Status == CommonStatus.Enabled)
+                          select new RecentActivityDto
+                          {
+                              Concept = concept.Name,
+                              Subject = subject != null ? subject.Name : null,
+                              ActivityDate = uca.ActivityDate,
+                              Status = state.Id
+                          })
+                          .OrderByDescending(x => x.ActivityDate)
+                          .Take(3)
+                          .ToListAsync();
+        }
+
+        public async Task<List<StreakDayDto>> GetMonthlyStreakAsync(int year, int month)
+        {
+            var session = _currentSessionHelper.GetCurrentSession();
+            if (session == null)
+                return new List<StreakDayDto>();
+
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1); // Last day of month
+
+            var streaks = await (from uca in _db.UserConceptActivities
+                                 where uca.UserId == session.UserId
+                                       && uca.Status == CommonStatus.Enabled
+                                       && uca.ActivityDate.Date >= startDate.Date
+                                       && uca.ActivityDate.Date <= endDate.Date
+                                 group uca by uca.ActivityDate.Date into g
+                                 select new StreakDayDto
+                                 {
+                                     Date = g.Key,
+                                     ActivityCount = g.Count()
+                                 }).ToListAsync();
+
+            return streaks;
+        }
+
+        public async Task<StreakDetailsDto> GetStreakDetailsAsync()
+        {
+            var session = _currentSessionHelper.GetCurrentSession();
+            if (session == null)
+                return new StreakDetailsDto();
+
+            // 1. Fetch all active activity dates for user
+            var activityDates = await _db.UserConceptActivities.Where(x => x.UserId == session.UserId && x.Status == CommonStatus.Enabled)
+                                .Select(x => x.ActivityDate.Date).Distinct().ToListAsync();
+
+            if (activityDates.Count == 0)
+                return new StreakDetailsDto();
+
+            // 2. Sort and process
+            var sortedDates = activityDates.OrderBy(d => d).ToList();
+            int currentStreak = 1;
+            int longestStreak = 1;
+
+            // Max Streak
+            for (int i = 1; i < sortedDates.Count; i++)
+            {
+                if ((sortedDates[i] - sortedDates[i - 1]).TotalDays == 1)
+                {
+                    currentStreak++;
+                    longestStreak = Math.Max(longestStreak, currentStreak);
+                }
+                else
+                {
+                    currentStreak = 1;
+                }
+            }
+
+            // Current Streak
+            var today = DateTime.UtcNow.Date;
+            int currentStreakCount = 0;
+
+            for (int i = sortedDates.Count - 1; i >= 0; i--)
+            {
+                var expected = today.AddDays(-currentStreakCount);
+                if (sortedDates[i] == expected)
+                {
+                    currentStreakCount++;
+                }
+                else if (sortedDates[i] < expected)
+                {
+                    break;
+                }
+            }
+
+            return new StreakDetailsDto
+            {
+                MaximumStreak = longestStreak,
+                CurrentStreak = currentStreakCount
+            };
+        }
     }
 }
