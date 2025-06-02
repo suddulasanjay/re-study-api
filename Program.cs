@@ -6,10 +6,13 @@ using ReStudyAPI.Data;
 using ReStudyAPI.Interfaces.Operation;
 using ReStudyAPI.Interfaces.Repositories;
 using ReStudyAPI.Interfaces.Security;
+using ReStudyAPI.Models.Common;
 using ReStudyAPI.Repositories;
 using ReStudyAPI.Services.Operation;
 using ReStudyAPI.Services.Security;
 using ReStudyAPI.Utility.Helpers;
+using System.Net;
+using System.Net.Mail;
 
 namespace ReStudyAPI
 {
@@ -19,6 +22,8 @@ namespace ReStudyAPI
         {
             string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
             var builder = WebApplication.CreateBuilder(args);
+            //Configuration
+            builder.Services.Configure<EmailConfiguration>(builder.Configuration.GetSection("EmailConfiguration"));
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -53,6 +58,20 @@ namespace ReStudyAPI
             builder.Services.AddScoped<IHomeService, HomeService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddTransient((serviceProvider) =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+                var userName = config.GetValue<string>("EmailConfiguration:SenderEmailAddress");
+                var password = config.GetValue<string>("EmailConfiguration:SenderPassword");
+                return new SmtpClient()
+                {
+                    Host = config.GetValue<string>("EmailConfiguration:SMTPAddress")!,
+                    Port = config.GetValue<int>("EmailConfiguration:SMTPPort"),
+                    EnableSsl = config.GetValue<bool>("EmailConfiguration:EnableSsl"),
+                    Credentials = new NetworkCredential(userName, password)
+                };
+            });
+            builder.Services.AddTransient<IEmailUtility, EmailUtility>();
 
             builder.Services.AddCors(options =>
             {

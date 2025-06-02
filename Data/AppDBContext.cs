@@ -6,6 +6,7 @@ namespace ReStudyAPI.Data
     public class AppDBContext : DataConnection
     {
         public AppDBContext(DataOptions options) : base(options) { }
+        public ITable<EmailTemplate> EmailTemplates => this.GetTable<EmailTemplate>();
         public ITable<Role> Roles => this.GetTable<Role>();
         public ITable<User> Users => this.GetTable<User>();
         public ITable<Subject> Subjects => this.GetTable<Subject>();
