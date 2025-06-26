@@ -1,13 +1,18 @@
 using AutoMapper;
+using Hangfire;
 using LinqToDB;
 using LinqToDB.AspNet;
 using LinqToDB.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using ReStudyAPI.Data;
+using ReStudyAPI.Interfaces.Jobs;
 using ReStudyAPI.Interfaces.Operation;
 using ReStudyAPI.Interfaces.Repositories;
 using ReStudyAPI.Interfaces.Security;
 using ReStudyAPI.Models.Common;
 using ReStudyAPI.Repositories;
+using ReStudyAPI.Services.Jobs;
 using ReStudyAPI.Services.Operation;
 using ReStudyAPI.Services.Security;
 using ReStudyAPI.Utility.Helpers;
@@ -24,6 +29,24 @@ namespace ReStudyAPI
             var builder = WebApplication.CreateBuilder(args);
             //Configuration
             builder.Services.Configure<EmailConfiguration>(builder.Configuration.GetSection("EmailConfiguration"));
+            builder.Services.Configure<SSOConfiguration>(builder.Configuration.GetSection("SSOConfiguration"));
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                            .AddJwtBearer(options =>
+                            {
+                                options.Authority = builder.Configuration["SSOConfiguration:BaseUrl"];
+                                options.TokenValidationParameters = new TokenValidationParameters
+                                {
+                                    ValidateIssuer = true,
+                                    ValidateAudience = true,
+                                    ValidateLifetime = true,
+                                    ValidateIssuerSigningKey = true,
+                                    ValidIssuer = builder.Configuration["SSOConfiguration:BaseUrl"],
+                                    ValidAudience = builder.Configuration["SSOConfiguration:ClientId"],
+                                    ClockSkew = TimeSpan.Zero
+                                };
+                            });
+
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -58,6 +81,9 @@ namespace ReStudyAPI
             builder.Services.AddScoped<IHomeService, HomeService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddHttpClient<IAuthorizationService, AuthorizationService>();
+            builder.Services.AddScoped<IPopulateNotificationJob, PopulateNotificationJob>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddTransient((serviceProvider) =>
             {
                 var config = serviceProvider.GetRequiredService<IConfiguration>();
@@ -84,6 +110,14 @@ namespace ReStudyAPI
                         .AllowCredentials());
             });
 
+            builder.Services.AddHangfire(config =>
+            {
+                config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+            });
+
+            builder.Services.AddHangfireServer();
+
+
             var app = builder.Build();
             app.UseCors(MyAllowSpecificOrigins);
             if (app.Environment.IsDevelopment())
@@ -92,8 +126,22 @@ namespace ReStudyAPI
                 app.UseSwaggerUI();
             }
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
+
+            app.UseHangfireDashboard();
+
+            RecurringJob.AddOrUpdate<IPopulateNotificationJob>(
+                recurringJobId: "daily-populate-notifications",
+                methodCall: job => job.RunAsync(),
+                cronExpression: "30 0 * * *", // 12:30 AM
+                options: new RecurringJobOptions
+                {
+                    TimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time")
+                }
+            );
+
             app.Run();
         }
     }

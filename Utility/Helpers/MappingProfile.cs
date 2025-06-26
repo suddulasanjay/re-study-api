@@ -14,6 +14,13 @@ namespace ReStudyAPI.Utility.Helpers
             CreateMap<User, UserDto>().ReverseMap();
             CreateMap<AddUserDto, User>();
             CreateMap<EditUserDto, User>();
+            CreateMap<User, UserInfoDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.SsoUserId ?? 0))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email ?? string.Empty))
+            .ReverseMap()
+            .ForMember(dest => dest.SsoUserId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
 
             CreateMap<Subject, AddSubjectDto>().ReverseMap();
             CreateMap<Subject, EditSubjectDto>().ReverseMap();

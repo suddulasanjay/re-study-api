@@ -16,5 +16,7 @@ namespace ReStudyAPI.Data
         public ITable<ConceptState> ConceptStates => this.GetTable<ConceptState>();
         public ITable<Concept> Concepts => this.GetTable<Concept>();
         public ITable<UserConceptActivity> UserConceptActivities => this.GetTable<UserConceptActivity>();
+        public ITable<NotificationType> NotificationTypes => this.GetTable<NotificationType>();
+        public ITable<Notification> Notifications => this.GetTable<Notification>();
     }
 }

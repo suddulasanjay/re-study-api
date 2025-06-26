@@ -39,6 +39,14 @@ namespace ReStudyAPI.Services.Security
             return user.Id;
         }
 
+        public async Task<int> CreateAsync(UserInfoDto userInfo)
+        {
+            var user = _mapper.Map<User>(userInfo);
+            user.CreatedTime = user.ModifiedTime = DateTime.UtcNow;
+            await _db.InsertAsync(user);
+            return user.Id;
+        }
+
         public async Task<bool> UpdateAsync(EditUserDto editUserdto)
         {
             var updated = await _db.Users
@@ -61,6 +69,16 @@ namespace ReStudyAPI.Services.Security
                 .Set(u => u.Status, CommonStatus.Deleted)
                 .UpdateAsync();
             return deleted > 0;
+        }
+
+        public async Task<bool> SSOUserIdExistsAsync(int ssoUserId)
+        {
+            return await _db.Users.AnyAsync(x => x.SsoUserId == ssoUserId);
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _db.Users.FirstOrDefaultAsync(x => x.Email == email);
         }
     }
 }
