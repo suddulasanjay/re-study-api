@@ -20,18 +20,17 @@ namespace ReStudyAPI.Services.Operation
         public async Task<List<AgendaDto>> GetAgendaAsync()
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-                return new List<AgendaDto>();
 
             var today = DateTime.UtcNow.Date;
+            int userId = await _currentSessionHelper.GetUserId(session);
 
             // Step 1: Fetch possible eligible concepts
             var rawConcepts = await (
-                from usercategory in _db.UserCategories.Where(uc => uc.UserId == session.UserId && uc.Status == CommonStatus.Enabled)
+                from usercategory in _db.UserCategories.Where(uc => uc.UserId == userId && uc.Status == CommonStatus.Enabled)
                 from category in _db.Categories.InnerJoin(c => c.Id == usercategory.CategoryId && c.Status == CommonStatus.Enabled)
                 from concept in _db.Concepts.InnerJoin(c => c.CategoryId == category.Id && c.Status == CommonStatus.Enabled)
                 from subject in _db.Subjects.LeftJoin(s => s.Id == category.SubjectId && s.Status == CommonStatus.Enabled)
-                from studies in _db.UserConceptActivities.LeftJoin(u => u.UserId == session.UserId && u.ActivityDate.Date == today && u.ConceptId == concept.Id && u.Status == CommonStatus.Enabled)
+                from studies in _db.UserConceptActivities.LeftJoin(u => u.UserId == userId && u.ActivityDate.Date == today && u.ConceptId == concept.Id && u.Status == CommonStatus.Enabled)
                 select new
                 {
                     concept,

@@ -16,9 +16,9 @@ namespace ReStudyAPI.Services.Security
         private readonly HttpClient _httpClient;
         private readonly IUserService _userService;
         private readonly AppDBContext _db;
-        private readonly EmailUtility _emailUtility;
+        private readonly IEmailUtility _emailUtility;
 
-        public AuthorizationService(IOptions<SSOConfiguration> ssoConfiguration, HttpClient httpClient, IUserService userService, AppDBContext db, EmailUtility emailUtility)
+        public AuthorizationService(IOptions<SSOConfiguration> ssoConfiguration, HttpClient httpClient, IUserService userService, AppDBContext db, IEmailUtility emailUtility)
         {
             _ssoConfiguration = ssoConfiguration.Value;
             _httpClient = httpClient;
@@ -128,13 +128,18 @@ namespace ReStudyAPI.Services.Security
 
         private async Task<UserInfoDto?> GetUserInfoAsync(string token)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, _ssoConfiguration.UserInfoPath);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{_ssoConfiguration.BaseUrl}{_ssoConfiguration.UserInfoPath}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var response = await _httpClient.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
             response.EnsureSuccessStatusCode();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
-            var userInfo = JsonSerializer.Deserialize<UserInfoDto>(await response.Content.ReadAsStringAsync());
+            var userInfo = JsonSerializer.Deserialize<UserInfoDto>(content, options);
 
             return userInfo;
         }

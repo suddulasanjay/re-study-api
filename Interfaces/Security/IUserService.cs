@@ -7,6 +7,7 @@ namespace ReStudyAPI.Interfaces.Security
     {
         public Task<List<UserDto>> GetAllAsync();
         public Task<UserDto?> GetByIdAsync(int id);
+        public Task<UserDto?> GetAsync();
         public Task<bool> SSOUserIdExistsAsync(int ssoUserId);
         public Task<User?> GetUserByEmailAsync(string email);
         public Task<int> CreateAsync(AddUserDto dto);

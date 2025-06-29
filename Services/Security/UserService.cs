@@ -5,16 +5,19 @@ using ReStudyAPI.Entities;
 using ReStudyAPI.Interfaces.Security;
 using ReStudyAPI.Models.Security;
 using ReStudyAPI.Utility.Constants;
+using ReStudyAPI.Utility.Helpers;
 
 namespace ReStudyAPI.Services.Security
 {
     public class UserService : IUserService
     {
+        private readonly ICurrentSessionHelper _currentSessionHelper;
         private readonly AppDBContext _db;
         private readonly IMapper _mapper;
 
-        public UserService(AppDBContext db, IMapper mapper)
+        public UserService(ICurrentSessionHelper currentSessionHelper, AppDBContext db, IMapper mapper)
         {
+            _currentSessionHelper = currentSessionHelper;
             _db = db;
             _mapper = mapper;
         }
@@ -28,6 +31,14 @@ namespace ReStudyAPI.Services.Security
         public async Task<UserDto?> GetByIdAsync(int id)
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status == CommonStatus.Enabled);
+            return user == null ? null : _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<UserDto?> GetAsync()
+        {
+            var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
+            var user = await _db.Users.FirstOrDefaultAsync(u => session != null && u.Id == userId && u.Status == CommonStatus.Enabled);
             return user == null ? null : _mapper.Map<UserDto>(user);
         }
 
@@ -78,7 +89,7 @@ namespace ReStudyAPI.Services.Security
 
         public async Task<User?> GetUserByEmailAsync(string email)
         {
-            return await _db.Users.FirstOrDefaultAsync(x => x.Email == email);
+            return await _db.Users.FirstOrDefaultAsync(x => x.Email != null && x.Email.ToLower() == email.ToLower());
         }
     }
 }

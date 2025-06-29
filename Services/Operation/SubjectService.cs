@@ -26,11 +26,7 @@ namespace ReStudyAPI.Services.Operation
         public async Task<int> CreateAsync(AddSubjectDto subjectDto)
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-            {
-                throw new Exception("Operation Not Allowed");
-            }
-            int userId = session?.UserId ?? default;
+            int userId = await _currentSessionHelper.GetUserId(session);
             var subject = _mapper.Map<Subject>(subjectDto);
             subject.CreatedTime = DateTime.UtcNow;
             subject.ModifiedTime = DateTime.UtcNow;
@@ -43,13 +39,15 @@ namespace ReStudyAPI.Services.Operation
         public async Task<bool> DeleteAsync(int id)
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            return await _subjectRepository.SoftDeleteAsync(id, session?.UserId);
+            int userId = await _currentSessionHelper.GetUserId(session);
+            return await _subjectRepository.SoftDeleteAsync(id, userId);
         }
 
         public async Task<List<SubjectDto>> GetAllAsync()
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            var userSubjects = await _subjectRepository.GetSubjectsByUserIdAsync(session?.UserId ?? 0);
+            int userId = await _currentSessionHelper.GetUserId(session);
+            var userSubjects = await _subjectRepository.GetSubjectsByUserIdAsync(userId);
             var presetSubjects = await _subjectRepository.GetPresetSubjectsAsync();
             var subjects = userSubjects.Concat(presetSubjects).GroupBy(s => s.Id).Select(g => g.First()).ToList();
             return _mapper.Map<List<SubjectDto>>(subjects);
@@ -64,11 +62,12 @@ namespace ReStudyAPI.Services.Operation
         public async Task<bool> UpdateAsync(EditSubjectDto subjectDto)
         {
             var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
             var existing = await _subjectRepository.GetByIdAsync(subjectDto.Id);
             if (existing == null) return false;
             existing.Description = subjectDto.Description;
             existing.ModifiedTime = DateTime.UtcNow;
-            existing.ModifiedByUserId = session?.UserId;
+            existing.ModifiedByUserId = userId;
 
             return await _subjectRepository.UpdateAsync(existing);
         }

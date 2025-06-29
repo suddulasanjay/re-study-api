@@ -23,7 +23,8 @@ namespace ReStudyAPI.Services.Operation
 
         public async Task<List<NotificationDto>> GetNotificationsAsync()
         {
-            var userId = (_sessionHelper.GetCurrentSession())?.UserId;
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
             var results = await (from n in _db.Notifications.Where(x => x.UserId == userId && x.Status == CommonStatus.Enabled)
                                  from c in _db.Concepts.InnerJoin(x => x.Id == n.ConceptId && x.Status == CommonStatus.Enabled)
                                  select new
@@ -46,28 +47,67 @@ namespace ReStudyAPI.Services.Operation
             }).ToList();
         }
 
+        public async Task<bool> MarkAllAsReadAsync()
+        {
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
+            var updated = await _db.Notifications.Where(n => n.UserId == userId && n.Status == CommonStatus.Enabled)
+                                                 .Set(n => n.IsRead, true)
+                                                 .Set(n => n.ModifiedTime, DateTime.UtcNow)
+                                                 .Set(n => n.ModifiedByUserId, userId)
+                                                 .UpdateAsync();
+
+            return updated > 0;
+        }
+
         public async Task<bool> MarkAsReadAsync(int notificationId)
         {
-            var userId = (_sessionHelper.GetCurrentSession())?.UserId;
-            var updated = await _db.GetTable<Notification>()
-                .Where(n => n.Id == notificationId && n.Status == "E")
-                .Set(n => n.IsRead, true)
-                .Set(n => n.ModifiedTime, DateTime.UtcNow)
-                .Set(n => n.ModifiedByUserId, userId)
-                .UpdateAsync();
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
+            var updated = await _db.Notifications.Where(n => n.Id == notificationId && n.UserId == userId && n.Status == CommonStatus.Enabled)
+                                                 .Set(n => n.IsRead, true)
+                                                 .Set(n => n.ModifiedTime, DateTime.UtcNow)
+                                                 .Set(n => n.ModifiedByUserId, userId)
+                                                 .UpdateAsync();
+
+            return updated > 0;
+        }
+
+        public async Task<bool> MarkAllAsUnReadAsync()
+        {
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
+            var updated = await _db.Notifications.Where(n => n.UserId == userId && n.Status == CommonStatus.Enabled)
+                                                 .Set(n => n.IsRead, false)
+                                                 .Set(n => n.ModifiedTime, DateTime.UtcNow)
+                                                 .Set(n => n.ModifiedByUserId, userId)
+                                                 .UpdateAsync();
 
             return updated > 0;
         }
 
         public async Task<bool> MarkAsUnReadAsync(int notificationId)
         {
-            var userId = (_sessionHelper.GetCurrentSession())?.UserId;
-            var updated = await _db.GetTable<Notification>()
-                .Where(n => n.Id == notificationId && n.Status == "E")
-                .Set(n => n.IsRead, false)
-                .Set(n => n.ModifiedTime, DateTime.UtcNow)
-                .Set(n => n.ModifiedByUserId, userId)
-                .UpdateAsync();
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
+            var updated = await _db.Notifications.Where(n => n.Id == notificationId && n.UserId == userId && n.Status == CommonStatus.Enabled)
+                                                 .Set(n => n.IsRead, false)
+                                                 .Set(n => n.ModifiedTime, DateTime.UtcNow)
+                                                 .Set(n => n.ModifiedByUserId, userId)
+                                                 .UpdateAsync();
+
+            return updated > 0;
+        }
+
+        public async Task<bool> DeleteAsync(int notificationId)
+        {
+            var session = _sessionHelper.GetCurrentSession();
+            var userId = await _sessionHelper.GetUserId(session);
+            var updated = await _db.Notifications.Where(n => n.Id == notificationId && n.Status == CommonStatus.Enabled)
+                                                 .Set(n => n.Status, CommonStatus.Deleted)
+                                                 .Set(n => n.ModifiedTime, DateTime.UtcNow)
+                                                 .Set(n => n.ModifiedByUserId, userId)
+                                                 .UpdateAsync();
 
             return updated > 0;
         }
@@ -106,6 +146,7 @@ namespace ReStudyAPI.Services.Operation
                             NotificationTypeId = (int)EnumNotificationType.Scheduled,
                             IsRead = false,
                             CreatedTime = DateTime.UtcNow,
+                            ModifiedTime = DateTime.UtcNow,
                             Status = CommonStatus.Enabled
                         });
                     }
@@ -137,6 +178,7 @@ namespace ReStudyAPI.Services.Operation
                                 NotificationTypeId = (int)EnumNotificationType.Missed,
                                 IsRead = false,
                                 CreatedTime = DateTime.UtcNow,
+                                ModifiedTime = DateTime.UtcNow,
                                 Status = CommonStatus.Enabled
                             });
                         }

@@ -28,7 +28,7 @@ namespace ReStudyAPI.Services.Operation
         public async Task<List<ConceptDto>> GetAllAsync()
         {
             var session = _sessionHelper.GetCurrentSession();
-            int userId = session?.UserId ?? 0;
+            int userId = await _sessionHelper.GetUserId(session);
             var subjects = await _subjectRepository.GetSubjectsByUserIdAsync(userId);
             subjects.AddRange(await _subjectRepository.GetPresetSubjectsAsync());
             var subjectIds = subjects.Select(subject => subject.Id).Distinct().ToList();
@@ -49,7 +49,7 @@ namespace ReStudyAPI.Services.Operation
             var session = _sessionHelper.GetCurrentSession();
             var concept = _mapper.Map<Concept>(dto);
             concept.CreatedTime = concept.ModifiedTime = DateTime.UtcNow;
-            concept.ModifiedByUserId = session?.UserId;
+            concept.ModifiedByUserId = await _sessionHelper.GetUserId(session);
             return await _conceptRepository.CreateAsync(concept);
         }
 
@@ -58,7 +58,7 @@ namespace ReStudyAPI.Services.Operation
             var session = _sessionHelper.GetCurrentSession();
             var concept = _mapper.Map<Concept>(dto);
             concept.ModifiedTime = DateTime.UtcNow;
-            concept.ModifiedByUserId = session?.UserId;
+            concept.ModifiedByUserId = await _sessionHelper.GetUserId(session);
             return await _conceptRepository.UpdateAsync(concept);
         }
 
@@ -70,12 +70,11 @@ namespace ReStudyAPI.Services.Operation
         public async Task<bool> RecordStudySessionAsync(AddStudySessionDto dto)
         {
             var session = _sessionHelper.GetCurrentSession();
-            if (session == null) return false;
 
             var activity = new UserConceptActivity
             {
                 ConceptId = dto.ConceptId,
-                UserId = session.UserId,
+                UserId = await _sessionHelper.GetUserId(session),
                 ActivityDate = DateTime.UtcNow,
                 Duration = dto.Duration,
                 ConceptStateId = dto.ConceptStateId,
@@ -83,7 +82,7 @@ namespace ReStudyAPI.Services.Operation
                 Status = CommonStatus.Enabled,
             };
             activity.CreatedTime = activity.ModifiedTime = DateTime.UtcNow;
-            activity.ModifiedByUserId = session?.UserId;
+            activity.ModifiedByUserId = await _sessionHelper.GetUserId(session);
 
             return await _conceptRepository.TrackUserConceptActivityAsync(activity);
         }
@@ -91,8 +90,8 @@ namespace ReStudyAPI.Services.Operation
         public async Task<StudySessionDto> GetStudySessionDetailsAsync(int conceptId)
         {
             var session = _sessionHelper.GetCurrentSession();
-            if (session == null) throw new ArgumentNullException(nameof(session));
-            return await _conceptRepository.GetStudySessionDetailsAsync(conceptId, session.UserId, DateTime.UtcNow);
+            int userId = await _sessionHelper.GetUserId(session);
+            return await _conceptRepository.GetStudySessionDetailsAsync(conceptId, userId, DateTime.UtcNow);
         }
     }
 }

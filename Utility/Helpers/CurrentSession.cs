@@ -2,6 +2,6 @@
 {
     public class CurrentSession
     {
-        public int UserId { get; set; }
+        public int SSOUserId { get; set; }
     }
 }

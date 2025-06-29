@@ -21,39 +21,31 @@ namespace ReStudyAPI.Services.Operation
         public async Task<List<UserConceptActivityDto>> GetUserConceptActivitiesAsync(DateTime startDate, DateTime endDate)
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-            {
-                return new List<UserConceptActivityDto>();
-            }
-            else
-            {
+            int userId = await _currentSessionHelper.GetUserId(session);
 
-                return await (from uca in _db.UserConceptActivities.Where(x => x.UserId == session.UserId && x.Status == CommonStatus.Enabled && x.ActivityDate.Date >= startDate.Date && x.ActivityDate.Date <= endDate.Date)
-                              from concept in _db.Concepts.InnerJoin(x => x.Id == uca.ConceptId && x.Status == CommonStatus.Enabled)
-                              from category in _db.Categories.InnerJoin(x => x.Id == concept.CategoryId && x.Status == CommonStatus.Enabled)
-                              from subject in _db.Subjects.LeftJoin(x => x.Id == category.SubjectId && x.Status == CommonStatus.Enabled)
-                              select new UserConceptActivityDto
-                              {
-                                  ConceptId = concept.Id,
-                                  CategoryId = category.Id,
-                                  SubjectId = subject != null ? subject.Id : (int?)null,
-                                  ProgressId = uca.ConceptStateId,
-                                  ConceptName = concept.Name,
-                                  CategoryName = category.Name,
-                                  SubjectName = subject != null ? subject.Name : null,
-                                  ActivityDate = uca.ActivityDate
-                              }).ToListAsync();
-
-            }
+            return await (from uca in _db.UserConceptActivities.Where(x => x.UserId == userId && x.Status == CommonStatus.Enabled && x.ActivityDate.Date >= startDate.Date && x.ActivityDate.Date <= endDate.Date)
+                          from concept in _db.Concepts.InnerJoin(x => x.Id == uca.ConceptId && x.Status == CommonStatus.Enabled)
+                          from category in _db.Categories.InnerJoin(x => x.Id == concept.CategoryId && x.Status == CommonStatus.Enabled)
+                          from subject in _db.Subjects.LeftJoin(x => x.Id == category.SubjectId && x.Status == CommonStatus.Enabled)
+                          select new UserConceptActivityDto
+                          {
+                              ConceptId = concept.Id,
+                              CategoryId = category.Id,
+                              SubjectId = subject != null ? subject.Id : (int?)null,
+                              ProgressId = uca.ConceptStateId,
+                              ConceptName = concept.Name,
+                              CategoryName = category.Name,
+                              SubjectName = subject != null ? subject.Name : null,
+                              ActivityDate = uca.ActivityDate
+                          }).ToListAsync();
         }
 
         public async Task<List<RecentActivityDto>> GetRecentActivitiesAsync()
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-                return new List<RecentActivityDto>();
 
-            return await (from uca in _db.UserConceptActivities.Where(x => x.UserId == session.UserId && x.Status == CommonStatus.Enabled)
+            int userId = await _currentSessionHelper.GetUserId(session);
+            return await (from uca in _db.UserConceptActivities.Where(x => x.UserId == userId && x.Status == CommonStatus.Enabled)
                           from concept in _db.Concepts.InnerJoin(c => c.Id == uca.ConceptId && c.Status == CommonStatus.Enabled)
                           from category in _db.Categories.InnerJoin(cat => cat.Id == concept.CategoryId && cat.Status == CommonStatus.Enabled)
                           from subject in _db.Subjects.LeftJoin(sub => sub.Id == category.SubjectId && sub.Status == CommonStatus.Enabled)
@@ -73,14 +65,13 @@ namespace ReStudyAPI.Services.Operation
         public async Task<List<StreakDayDto>> GetMonthlyStreakAsync(int year, int month)
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-                return new List<StreakDayDto>();
 
             var startDate = new DateTime(year, month, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1); // Last day of month
+            int userId = await _currentSessionHelper.GetUserId(session);
 
             var streaks = await (from uca in _db.UserConceptActivities
-                                 where uca.UserId == session.UserId
+                                 where uca.UserId == userId
                                        && uca.Status == CommonStatus.Enabled
                                        && uca.ActivityDate.Date >= startDate.Date
                                        && uca.ActivityDate.Date <= endDate.Date
@@ -97,11 +88,10 @@ namespace ReStudyAPI.Services.Operation
         public async Task<StreakDetailsDto> GetStreakDetailsAsync()
         {
             var session = _currentSessionHelper.GetCurrentSession();
-            if (session == null)
-                return new StreakDetailsDto();
+            int userId = await _currentSessionHelper.GetUserId(session);
 
             // 1. Fetch all active activity dates for user
-            var activityDates = await _db.UserConceptActivities.Where(x => x.UserId == session.UserId && x.Status == CommonStatus.Enabled)
+            var activityDates = await _db.UserConceptActivities.Where(x => x.UserId == userId && x.Status == CommonStatus.Enabled)
                                 .Select(x => x.ActivityDate.Date).Distinct().ToListAsync();
 
             if (activityDates.Count == 0)

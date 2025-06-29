@@ -29,7 +29,7 @@ namespace ReStudyAPI.Services.Operation
         public async Task<List<CategoryDto>> GetAllAsync()
         {
             var session = _sessionHelper.GetCurrentSession();
-            int userId = session?.UserId ?? 0;
+            int userId = await _sessionHelper.GetUserId(session);
 
             var subjects = await _subjectRepository.GetSubjectsByUserIdAsync(userId);
             subjects.AddRange(await _subjectRepository.GetPresetSubjectsAsync());
@@ -49,11 +49,7 @@ namespace ReStudyAPI.Services.Operation
         public async Task<int> CreateAsync(AddCategoryDto dto)
         {
             var session = _sessionHelper.GetCurrentSession();
-            if (session == null)
-            {
-                throw new Exception("Operation Not Allowed");
-            };
-            int userId = session?.UserId ?? 0;
+            int userId = await _sessionHelper.GetUserId(session);
             var category = _mapper.Map<Category>(dto);
             category.CreatedTime = category.ModifiedTime = DateTime.UtcNow;
             category.ModifiedByUserId = userId;
@@ -67,7 +63,7 @@ namespace ReStudyAPI.Services.Operation
             var session = _sessionHelper.GetCurrentSession();
             var category = _mapper.Map<Category>(dto);
             category.ModifiedTime = DateTime.UtcNow;
-            category.ModifiedByUserId = session?.UserId;
+            category.ModifiedByUserId = await _sessionHelper.GetUserId(session);
             return await _categoryRepository.UpdateAsync(category);
         }
 

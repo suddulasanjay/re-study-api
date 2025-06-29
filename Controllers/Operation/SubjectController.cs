@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ReStudyAPI.Interfaces.Operation;
 using ReStudyAPI.Models.Operation;
 using System.Net.Mime;
 
 namespace ReStudyAPI.Controllers.Operation
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class SubjectController : ControllerBase

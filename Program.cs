@@ -53,6 +53,7 @@ namespace ReStudyAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddHttpClient();
             //DB Connection
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             var DBConnectionSettings = new List<CustomConnectionStringSettings> {
@@ -81,7 +82,7 @@ namespace ReStudyAPI
             builder.Services.AddScoped<IHomeService, HomeService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, UserService>();
-            builder.Services.AddHttpClient<IAuthorizationService, AuthorizationService>();
+            builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
             builder.Services.AddScoped<IPopulateNotificationJob, PopulateNotificationJob>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddTransient((serviceProvider) =>

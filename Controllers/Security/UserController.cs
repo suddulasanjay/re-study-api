@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ReStudyAPI.Interfaces.Security;
 using ReStudyAPI.Models.Security;
 
 namespace ReStudyAPI.Controllers.Security
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
@@ -15,7 +17,7 @@ namespace ReStudyAPI.Controllers.Security
             _userService = userService;
         }
 
-        [HttpGet]
+        [HttpGet("list")]
         [ProducesResponseType(typeof(IEnumerable<UserDto>), 200)]
         public async Task<IActionResult> GetAll()
         {
@@ -29,6 +31,15 @@ namespace ReStudyAPI.Controllers.Security
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _userService.GetByIdAsync(id);
+            return user == null ? NotFound() : Ok(user);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(UserDto), 200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get()
+        {
+            var user = await _userService.GetAsync();
             return user == null ? NotFound() : Ok(user);
         }
 
