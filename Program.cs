@@ -1,5 +1,6 @@
 using AutoMapper;
 using Hangfire;
+using Hangfire.PostgreSql;
 using LinqToDB;
 using LinqToDB.AspNet;
 using LinqToDB.Data;
@@ -57,12 +58,12 @@ namespace ReStudyAPI
             //DB Connection
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             var DBConnectionSettings = new List<CustomConnectionStringSettings> {
-                new CustomConnectionStringSettings { Name = "DefaultConnection", ProviderName = ProviderName.SqlServer, ConnectionString = connectionString! }
+                new CustomConnectionStringSettings { Name = "DefaultConnection", ProviderName = ProviderName.PostgreSQL, ConnectionString = connectionString! }
             };
             DataConnection.DefaultSettings = new AppLinqToDBSettings(DBConnectionSettings.ToArray());
             builder.Services.AddLinqToDBContext<AppDBContext>((provider, options) =>
             {
-                options.UseSqlServer(connectionString!);
+                options.UsePostgreSQL(connectionString!);
                 return options;
             });
             builder.Services.AddTransient<ICurrentSessionHelper, CurrentSessionHelper>();
@@ -113,7 +114,7 @@ namespace ReStudyAPI
 
             builder.Services.AddHangfire(config =>
             {
-                config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+                config.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
             builder.Services.AddHangfireServer();
