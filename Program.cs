@@ -114,7 +114,7 @@ namespace ReStudyAPI
 
             builder.Services.AddHangfire(config =>
             {
-                config.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+                config.UsePostgreSqlStorage(options => options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))).WithJobExpirationTimeout(TimeSpan.FromMinutes(1));
             });
 
             builder.Services.AddHangfireServer();
@@ -137,7 +137,7 @@ namespace ReStudyAPI
             RecurringJob.AddOrUpdate<IPopulateNotificationJob>(
                 recurringJobId: "daily-populate-notifications",
                 methodCall: job => job.RunAsync(),
-                cronExpression: "30 0 * * *", // 12:30 AM
+                cronExpression: Cron.Daily(0, 30), // 12:30 AM
                 options: new RecurringJobOptions
                 {
                     TimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time")

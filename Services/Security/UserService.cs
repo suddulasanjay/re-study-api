@@ -54,6 +54,7 @@ namespace ReStudyAPI.Services.Security
         {
             var user = _mapper.Map<User>(userInfo);
             user.CreatedTime = user.ModifiedTime = DateTime.UtcNow;
+            user.RoleId = 1;
             await _db.InsertAsync(user);
             return user.Id;
         }

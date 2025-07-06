@@ -131,7 +131,7 @@ namespace ReStudyAPI.Services.Operation
                 // SCHEDULED
                 foreach (var conceptId in todayConceptIds)
                 {
-                    bool exists = await _db.GetTable<Notification>().AnyAsync(n =>
+                    bool exists = await _db.Notifications.AnyAsync(n =>
                         n.UserId == userId &&
                         n.ConceptId == conceptId &&
                         n.NotificationTypeId == (int)EnumNotificationType.Scheduled &&
@@ -163,7 +163,7 @@ namespace ReStudyAPI.Services.Operation
 
                     if (!completed)
                     {
-                        bool exists = await _db.GetTable<Notification>().AnyAsync(n =>
+                        bool exists = await _db.Notifications.AnyAsync(n =>
                             n.UserId == userId &&
                             n.ConceptId == conceptId &&
                             n.NotificationTypeId == (int)EnumNotificationType.Missed &&
