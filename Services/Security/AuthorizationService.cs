@@ -118,10 +118,19 @@ namespace ReStudyAPI.Services.Security
             else
             {
                 await _userService.CreateAsync(userInfo);
-                var body = (await _db.EmailTemplates.FirstOrDefaultAsync(x => x.TemplateName == "user_welcome" && x.Status == CommonStatus.Enabled))?.TemplateBody;
-                if (!string.IsNullOrEmpty(body))
+                var template = (await _db.EmailTemplates.FirstOrDefaultAsync(x => x.TemplateName == "user_welcome" && x.Status == CommonStatus.Enabled));
+                if (template != null)
                 {
-                    await _emailUtility.SendEmailAsync(userInfo.Email, "Welcome User", body);
+                    var subject = template.Subject;
+                    var body = template.TemplateBody;
+                    if (!string.IsNullOrEmpty(body))
+                    {
+                        string userName = userInfo.FirstName + " " + userInfo.LastName;
+                        string currentYear = DateTime.UtcNow.Year.ToString();
+                        //update app url in db
+                        body = body.Replace("{{name}}", userName).Replace("{{currentYear}}", currentYear);
+                        await _emailUtility.SendEmailAsync(userInfo.Email, subject, body);
+                    }
                 }
             }
         }
