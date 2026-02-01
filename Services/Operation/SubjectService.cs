@@ -1,71 +1,75 @@
-﻿using LinqToDB;
-using ReStudyAPI.Data;
+﻿using AutoMapper;
 using ReStudyAPI.Entities;
 using ReStudyAPI.Interfaces.Operation;
+using ReStudyAPI.Interfaces.Repositories;
 using ReStudyAPI.Models.Operation;
-using ReStudyAPI.Utility.Constants;
+using ReStudyAPI.Utility.Helpers;
 
 namespace ReStudyAPI.Services.Operation
 {
     public class SubjectService : ISubjectService
     {
-        private readonly AppDBContext _db;
-        public SubjectService(AppDBContext db)
+        private readonly ISubjectRepository _subjectRepository;
+        private readonly ICurrentSessionHelper _currentSessionHelper;
+        private readonly IMapper _mapper;
+
+        public SubjectService(
+            ISubjectRepository subjectRepository,
+            ICurrentSessionHelper currentSessionHelper,
+            IMapper mapper)
         {
-            _db = db;
+            _subjectRepository = subjectRepository;
+            _currentSessionHelper = currentSessionHelper;
+            _mapper = mapper;
         }
 
         public async Task<int> CreateAsync(AddSubjectDto subjectDto)
         {
-            var subject = new Subject
-            {
-                Name = subjectDto.Name,
-                Description = subjectDto.Description,
-                IsPreset = subjectDto.IsPreset,
-                Status = CommonStatus.Enabled,
-                CreatedTime = DateTime.UtcNow,
-                ModifiedTime = DateTime.UtcNow,
-                ModifiedByUserId = 1
-            };
-            return await _db.InsertWithInt32IdentityAsync(subject);
+            var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
+            var subject = _mapper.Map<Subject>(subjectDto);
+            subject.CreatedTime = DateTime.UtcNow;
+            subject.ModifiedTime = DateTime.UtcNow;
+            subject.ModifiedByUserId = userId;
+            var subjectId = await _subjectRepository.CreateAsync(subject);
+            await _subjectRepository.AssignSubjectToUserAsync(userId, subjectId);
+            return subjectId;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            await _db.Subjects.Where(x => x.Id == id).Set(x => x.Status, CommonStatus.Deleted).UpdateAsync();
-            return true;
+            var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
+            return await _subjectRepository.SoftDeleteAsync(id, userId);
         }
 
-        public async Task<IEnumerable<SubjectDto>> GetAllAsync()
+        public async Task<List<SubjectDto>> GetAllAsync()
         {
-            var subjects = await _db.Subjects.Where(x => x.Status == CommonStatus.Enabled).Select(s => new SubjectDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                IsPreset = s.IsPreset
-            }).ToListAsync();
-            return subjects;
+            var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
+            var userSubjects = await _subjectRepository.GetSubjectsByUserIdAsync(userId);
+            var presetSubjects = await _subjectRepository.GetPresetSubjectsAsync();
+            var subjects = userSubjects.Concat(presetSubjects).GroupBy(s => s.Id).Select(g => g.First()).ToList();
+            return _mapper.Map<List<SubjectDto>>(subjects);
         }
 
         public async Task<SubjectDto?> GetByIdAsync(int id)
         {
-            return await _db.Subjects.Where(x => x.Status == CommonStatus.Enabled).Select(s => new SubjectDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                IsPreset = s.IsPreset
-            }).FirstOrDefaultAsync();
+            var subject = await _subjectRepository.GetByIdAsync(id);
+            return subject != null ? _mapper.Map<SubjectDto>(subject) : null;
         }
 
         public async Task<bool> UpdateAsync(EditSubjectDto subjectDto)
         {
-            await _db.Subjects.Where(x => x.Id == subjectDto.Id)
-                .Set(x => x.Description, subjectDto.Description)
-                .Set(s => s.ModifiedTime, DateTime.UtcNow)
-                .UpdateAsync();
-            return true;
+            var session = _currentSessionHelper.GetCurrentSession();
+            int userId = await _currentSessionHelper.GetUserId(session);
+            var existing = await _subjectRepository.GetByIdAsync(subjectDto.Id);
+            if (existing == null) return false;
+            existing.Description = subjectDto.Description;
+            existing.ModifiedTime = DateTime.UtcNow;
+            existing.ModifiedByUserId = userId;
+
+            return await _subjectRepository.UpdateAsync(existing);
         }
     }
 }

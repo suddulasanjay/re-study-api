@@ -16,6 +16,9 @@ namespace ReStudyAPI.Entities
         [Column(Name = "categoryid"), NotNull]
         public int CategoryId { get; set; }
 
+        [Column(Name = "duration"), NotNull]
+        public int Duration { get; set; }
+
         [Column(Name = "scheduleddate"), NotNull]
         public DateTime ScheduledDate { get; set; }
 
